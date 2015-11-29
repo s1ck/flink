@@ -39,5 +39,5 @@ public interface CheckpointIDCounter {
 	 * @return The previous checkpoint ID
 	 */
 	long getAndIncrement() throws Exception;
-
+	
 }

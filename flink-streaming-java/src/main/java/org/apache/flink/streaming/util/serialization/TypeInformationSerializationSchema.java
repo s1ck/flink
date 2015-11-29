@@ -29,10 +29,12 @@ import java.io.IOException;
 /**
  * A serialization and deserialization schema that uses Flink's serialization stack to
  * transform typed from and to byte arrays.
+ *
+ * @see TypeInformationKeyValueSerializationSchema for a serialization schema supporting Key Value pairs.
  * 
  * @param <T> The type to be serialized.
  */
-public class TypeInformationSerializationSchema<T> implements DeserializationSchema<T>, SerializationSchema<T, byte[]> {
+public class TypeInformationSerializationSchema<T> implements DeserializationSchema<T>, SerializationSchema<T> {
 	
 	private static final long serialVersionUID = -5359448468131559102L;
 	

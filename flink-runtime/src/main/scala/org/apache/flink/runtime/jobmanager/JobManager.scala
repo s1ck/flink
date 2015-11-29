@@ -913,6 +913,8 @@ class JobManager(
           executionGraph.enableSnapshotCheckpointing(
             snapshotSettings.getCheckpointInterval,
             snapshotSettings.getCheckpointTimeout,
+            snapshotSettings.getMinPauseBetweenCheckpoints,
+            snapshotSettings.getMaxConcurrentCheckpoints,
             triggerVertices,
             ackVertices,
             confirmVertices,
@@ -1382,6 +1384,7 @@ object JobManager {
     // startup checks and logging
     EnvironmentInformation.logEnvironmentInfo(LOG.logger, "JobManager", args)
     EnvironmentInformation.checkJavaVersion()
+    SignalHandler.register(LOG.logger)
 
     // parsing the command line arguments
     val (configuration: Configuration,

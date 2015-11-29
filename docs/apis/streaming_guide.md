@@ -2519,7 +2519,7 @@ implementing the `Evictor` interface.
          until end-value are retained (the resulting window size is 1 second).
         </p>
   {% highlight java %}
-triggeredStream.evict(TimeEvictor.of(Time.of(1, TimeUnit.SECONDS)));
+triggeredStream.evictor(TimeEvictor.of(Time.of(1, TimeUnit.SECONDS)));
   {% endhighlight %}
       </td>
     </tr>
@@ -2530,7 +2530,7 @@ triggeredStream.evict(TimeEvictor.of(Time.of(1, TimeUnit.SECONDS)));
           Retain 1000 elements from the end of the window backwards, evicting all others.
          </p>
    {% highlight java %}
-triggeredStream.evict(CountEvictor.of(1000));
+triggeredStream.evictor(CountEvictor.of(1000));
    {% endhighlight %}
        </td>
      </tr>
@@ -2543,7 +2543,7 @@ triggeredStream.evict(CountEvictor.of(1000));
             DeltaFunction).
           </p>
     {% highlight java %}
-triggeredStream.evict(DeltaEvictor.of(5000, new DeltaFunction<Double>() {
+triggeredStream.evictor(DeltaEvictor.of(5000, new DeltaFunction<Double>() {
   public double (Double oldValue, Double newValue) {
       return newValue - oldValue;
   }
@@ -2572,7 +2572,7 @@ triggeredStream.evict(DeltaEvictor.of(5000, new DeltaFunction<Double>() {
          until end-value are retained (the resulting window size is 1 second).
         </p>
   {% highlight scala %}
-triggeredStream.evict(TimeEvictor.of(Time.of(1, TimeUnit.SECONDS)));
+triggeredStream.evictor(TimeEvictor.of(Time.of(1, TimeUnit.SECONDS)));
   {% endhighlight %}
       </td>
     </tr>
@@ -2583,7 +2583,7 @@ triggeredStream.evict(TimeEvictor.of(Time.of(1, TimeUnit.SECONDS)));
           Retain 1000 elements from the end of the window backwards, evicting all others.
          </p>
    {% highlight scala %}
-triggeredStream.evict(CountEvictor.of(1000));
+triggeredStream.evictor(CountEvictor.of(1000));
    {% endhighlight %}
        </td>
      </tr>
@@ -2596,7 +2596,7 @@ triggeredStream.evict(CountEvictor.of(1000));
             DeltaFunction).
           </p>
     {% highlight scala %}
-windowedStream.evict(DeltaEvictor.of(5000.0, { (old,new) => new - old > 0.01 }))
+windowedStream.evictor(DeltaEvictor.of(5000.0, { (old,new) => new - old > 0.01 }))
     {% endhighlight %}
         </td>
       </tr>
@@ -2632,7 +2632,7 @@ stream.countWindow(1000)
     {% highlight java %}
 stream.window(GlobalWindows.create())
   .trigger(CountTrigger.of(1000)
-  .evict(CountEvictor.of(1000)))
+  .evictor(CountEvictor.of(1000)))
     {% endhighlight %}
         </td>
       </tr>
@@ -2646,8 +2646,8 @@ stream.countWindow(1000, 100)
         <td>
     {% highlight java %}
 stream.window(GlobalWindows.create())
-  .trigger(CountTrigger.of(1000)
-  .evict(CountEvictor.of(100)))
+  .evictor(CountEvictor.of(1000))
+  .trigger(CountTrigger.of(100))
     {% endhighlight %}
         </td>
       </tr>
@@ -3098,7 +3098,7 @@ later checkpoints can subsume missing notifications.
 For example the same counting, reduce function shown for `OperatorState`s by using the `Checkpointed` interface instead:
 
 {% highlight java %}
-public class CounterSum implements ReduceFunction<Long>, Checkpointed<Long> {
+public class CounterSum extends ReduceFunction<Long>, Checkpointed<Long> {
 
     // persistent counter
     private long counter = 0;
@@ -3140,7 +3140,7 @@ of different types), the type of the state (used to create efficient serializers
 as a value for keys that do not yet have a value associated).
 
 {% highlight java %}
-public class CounterSum implements RichReduceFunction<Long> {
+public class CounterSum extends RichReduceFunction<Long> {
 
     /** The state handle */
     private OperatorState<Long> counter;
@@ -3188,7 +3188,7 @@ In order to make the updates to the state and output collection atomic (required
 on failure/recovery), the user is required to get a lock from the source's context.
 
 {% highlight java %}
-public static class CounterSource implements RichParallelSourceFunction<Long>, Checkpointed<Long> {
+public static class CounterSource extends RichParallelSourceFunction<Long>, Checkpointed<Long> {
 
     /**  current offset for exactly once semantics */
     private long offset;
@@ -3463,7 +3463,7 @@ properties.setProperty("bootstrap.servers", "localhost:9092");
 properties.setProperty("zookeeper.connect", "localhost:2181");
 properties.setProperty("group.id", "test");
 stream = env
-    .addSource(new KafkaSource[String]("topic", new SimpleStringSchema(), properties))
+    .addSource(new FlinkKafkaConsumer082[String]("topic", new SimpleStringSchema(), properties))
     .print
 {% endhighlight %}
 </div>
