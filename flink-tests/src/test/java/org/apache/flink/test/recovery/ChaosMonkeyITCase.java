@@ -46,6 +46,7 @@ import org.apache.flink.streaming.api.checkpoint.Checkpointed;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
+import org.apache.flink.util.TestLogger;
 import org.junit.AfterClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -58,6 +59,7 @@ import scala.concurrent.duration.FiniteDuration;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -70,7 +72,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 @Ignore
-public class ChaosMonkeyITCase {
+public class ChaosMonkeyITCase extends TestLogger {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ChaosMonkeyITCase.class);
 
@@ -135,19 +137,19 @@ public class ChaosMonkeyITCase {
 		// will be killed. On recovery (which takes some time to bring up the new process etc.),
 		// this test will wait for task managers to reconnect before starting the next count down.
 		// Therefore the delay between retries is not important in this setup.
-		final FiniteDuration killEvery = new FiniteDuration(30, TimeUnit.SECONDS);
+		final FiniteDuration killEvery = new FiniteDuration(5, TimeUnit.SECONDS);
 
 		// Trigger a checkpoint every
-		final int checkpointingIntervalMs = 2000;
+		final int checkpointingIntervalMs = 1000;
 
 		// Total number of kills
-		final int totalNumberOfKills = 5;
+		final int totalNumberOfKills = 10;
 
 		// -----------------------------------------------------------------------------------------
 
 		// Setup
 		Configuration config = ZooKeeperTestUtils.createZooKeeperRecoveryModeConfig(
-				ZooKeeper.getConnectString(), FileStateBackendBasePath.getPath());
+				ZooKeeper.getConnectString(), FileStateBackendBasePath.toURI().toString());
 
 		// Akka and restart timeouts
 		config.setString(ConfigConstants.AKKA_WATCH_HEARTBEAT_INTERVAL, "1000 ms");
@@ -334,7 +336,7 @@ public class ChaosMonkeyITCase {
 				jobManagerProcess.printProcessLog();
 			}
 
-			t.printStackTrace();
+			throw t;
 		}
 		finally {
 			for (JobManagerProcess jobManagerProcess : jobManagerProcesses) {
@@ -531,8 +533,14 @@ public class ChaosMonkeyITCase {
 
 		LOG.info("Checking " + ZooKeeper.getClientNamespace() +
 				ConfigConstants.DEFAULT_ZOOKEEPER_CHECKPOINTS_PATH);
-		List<String> checkpoints = ZooKeeper.getChildren(ConfigConstants.DEFAULT_ZOOKEEPER_CHECKPOINTS_PATH);
-		assertEquals("Unclean checkpoints: " + checkpoints, 0, checkpoints.size());
+
+		for (int i = 0; i < 10; i++) {
+			List<String> checkpoints = ZooKeeper.getChildren(ConfigConstants.DEFAULT_ZOOKEEPER_CHECKPOINTS_PATH);
+			assertEquals("Unclean checkpoints: " + checkpoints, 0, checkpoints.size());
+
+			LOG.info("Unclean... retrying in 2s.");
+			Thread.sleep(2000);
+		}
 
 		LOG.info("Checking " + ZooKeeper.getClientNamespace() +
 				ConfigConstants.DEFAULT_ZOOKEEPER_CHECKPOINT_COUNTER_PATH);
@@ -543,7 +551,7 @@ public class ChaosMonkeyITCase {
 
 		LOG.info("Checking file system backend state...");
 
-		File fsCheckpoints = new File(config.getString(FsStateBackendFactory.CHECKPOINT_DIRECTORY_URI_CONF_KEY, ""));
+		File fsCheckpoints = new File(new URI(config.getString(FsStateBackendFactory.CHECKPOINT_DIRECTORY_URI_CONF_KEY, "")).getPath());
 
 		LOG.info("Checking " + fsCheckpoints);
 
@@ -551,22 +559,14 @@ public class ChaosMonkeyITCase {
 		if (files == null) {
 			fail(fsCheckpoints + " does not exist: " + Arrays.toString(FileStateBackendBasePath.listFiles()));
 		}
-		else {
-			assertEquals("Unclean file system checkpoints: " + Arrays.toString(fsCheckpoints.listFiles()),
-					0, files.length);
-		}
 
-		File fsRecovery = new File(config.getString(ConfigConstants.ZOOKEEPER_RECOVERY_PATH, ""));
+		File fsRecovery = new File(new URI(config.getString(ConfigConstants.ZOOKEEPER_RECOVERY_PATH, "")).getPath());
 
 		LOG.info("Checking " + fsRecovery);
 
 		files = fsRecovery.listFiles();
 		if (files == null) {
 			fail(fsRecovery + " does not exist: " + Arrays.toString(FileStateBackendBasePath.listFiles()));
-		}
-		else {
-			assertEquals("Unclean file system checkpoints: " + Arrays.toString(fsRecovery.listFiles()),
-					0, files.length);
 		}
 	}
 

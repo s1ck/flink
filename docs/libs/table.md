@@ -188,11 +188,18 @@ Table result = in.where("b = 'red'");
     <tr>
       <td><strong>GroupBy</strong></td>
       <td>
-        <p>Similar to a SQL GROUPBY clause. Group the elements on the grouping keys, with a following aggregation</p>
-        <p>operator to aggregate on per-group basis.</p>
+        <p>Similar to a SQL GROUPBY clause. Group the elements on the grouping keys, with a following aggregation
+        operator to aggregate on per-group basis.</p>
 {% highlight java %}
 Table in = tableEnv.fromDataSet(ds, "a, b, c");
 Table result = in.groupBy("a").select("a, b.sum as d");
+{% endhighlight %}
+        <p><i>Note:</i> Flink can refer to nonaggregated columns in the select list that are not named in
+        the groupBy clause, it could be used to get better performance by avoiding unnecessary column sorting and
+        grouping while nonaggregated column is cogrouped with columns in groupBy clause. For example:</p>
+{% highlight java %}
+Table in = tableEnv.fromDataSet(ds, "a, b, c");
+Table result = in.groupBy("a").select("a, b, c.sum as d");
 {% endhighlight %}
       </td>
     </tr>
@@ -200,8 +207,8 @@ Table result = in.groupBy("a").select("a, b.sum as d");
     <tr>
       <td><strong>Join</strong></td>
       <td>
-        <p>Similar to a SQL JOIN clause. Join two tables, both tables must have distinct field name, and the where</p>
-        <p>clause is mandatory for join condition.</p>
+        <p>Similar to a SQL JOIN clause. Join two tables, both tables must have distinct field name, and the where
+        clause is mandatory for join condition.</p>
 {% highlight java %}
 Table left = tableEnv.fromDataSet(ds1, "a, b, c");
 Table right = tableEnv.fromDataSet(ds2, "d, e, f");
@@ -284,11 +291,18 @@ val result = in.where('b === "red");
     <tr>
       <td><strong>GroupBy</strong></td>
       <td>
-        <p>Similar to a SQL GROUPBY clause. Group the elements on the grouping keys, with a following aggregation</p>
-        <p>operator to aggregate on per-group basis.</p>
+        <p>Similar to a SQL GROUPBY clause. Group the elements on the grouping keys, with a following aggregation
+        operator to aggregate on per-group basis.</p>
 {% highlight scala %}
 val in = ds.as('a, 'b, 'c);
 val result = in.groupBy('a).select('a, 'b.sum as 'd);
+{% endhighlight %}
+        <p><i>Note:</i> Flink can refer to nonaggregated columns in the select list that are not named in
+        the groupBy clause, it could be used to get better performance by avoiding unnecessary column sorting and
+        grouping while nonaggregated column is cogrouped with columns in groupBy clause. For example:</p>
+{% highlight scala %}
+val in = ds.as('a, 'b, 'c);
+val result = in.groupBy('a).select('a, 'b, 'c.sum as 'd);
 {% endhighlight %}
       </td>
     </tr>
@@ -296,8 +310,8 @@ val result = in.groupBy('a).select('a, 'b.sum as 'd);
     <tr>
       <td><strong>Join</strong></td>
       <td>
-        <p>Similar to a SQL JOIN clause. Join two tables, both tables must have distinct field name, and the where</p>
-        <p>clause is mandatory for join condition.</p>
+        <p>Similar to a SQL JOIN clause. Join two tables, both tables must have distinct field name, and the where
+        clause is mandatory for join condition.</p>
 {% highlight scala %}
 val left = ds1.as('a, 'b, 'c);
 val right = ds2.as('d, 'e, 'f);
@@ -351,11 +365,11 @@ unary = [ "!" | "-" | "~" ] , suffix ;
 
 suffix = atom | aggregation | cast | as | substring ;
 
-aggregation = atom , [ ".sum" | ".min" | ".max" | ".count" | "avg" ] ;
+aggregation = atom , [ ".sum" | ".min" | ".max" | ".count" | ".avg" ] ;
 
 cast = atom , ".cast(" , data type , ")" ;
 
-data type = "BYTE" | "SHORT" | "INT" | "LONG" | "FLOAT" | "DOUBLE" | "BOOL" | "BOOLEAN" | "STRING" ;
+data type = "BYTE" | "SHORT" | "INT" | "LONG" | "FLOAT" | "DOUBLE" | "BOOL" | "BOOLEAN" | "STRING" | "DATE" ;
 
 as = atom , ".as(" , field reference , ")" ;
 
@@ -371,4 +385,6 @@ atom = ( "(" , single expression , ")" ) | literal | field reference ;
 
 Here, `literal` is a valid Java literal and `field reference` specifies a column in the data. The
 column names follow Java identifier syntax.
+
+Only the types `LONG` and `STRING` can be casted to `DATE` and vice versa. A `LONG` casted to `DATE` must be a milliseconds timestamp. A `STRING` casted to `DATE` must have the format "`yyyy-MM-dd HH:mm:ss.SSS`", "`yyyy-MM-dd`", "`HH:mm:ss`", or a milliseconds timestamp. By default, all timestamps refer to the UTC timezone beginning from January 1, 1970, 00:00:00 in milliseconds.
 

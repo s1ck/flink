@@ -306,6 +306,11 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 		// Connect to a broker to get the partitions
 		List<PartitionInfo> partitionInfos = getPartitionsForTopic(topic, props);
 
+		if (partitionInfos.size() == 0) {
+			throw new RuntimeException("Unable to retrieve any partitions for topic " + topic + "." +
+					"Please check previous log entries");
+		}
+
 		// get initial partitions list. The order of the partitions is important for consistent 
 		// partition id assignment in restart cases.
 		this.partitions = new int[partitionInfos.size()];
@@ -414,14 +419,22 @@ public class FlinkKafkaConsumer<T> extends RichParallelSourceFunction<T>
 				// same here.
 				long commitInterval = Long.valueOf(props.getProperty("auto.commit.interval.ms", "60000"));
 				offsetCommitter = new PeriodicOffsetCommitter(commitInterval, this);
+				offsetCommitter.setDaemon(true);
 				offsetCommitter.start();
 				LOG.info("Starting periodic offset committer, with commit interval of {}ms", commitInterval);
 			}
 
-			fetcher.run(sourceContext, deserializer, lastOffsets);
-
-			if (offsetCommitter != null) {
-				offsetCommitter.close();
+			try {
+				fetcher.run(sourceContext, deserializer, lastOffsets);
+			} finally {
+				if (offsetCommitter != null) {
+					offsetCommitter.close();
+					try {
+						offsetCommitter.join();
+					} catch(InterruptedException ie) {
+						// ignore interrupt
+					}
+				}
 			}
 		}
 		else {

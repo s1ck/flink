@@ -23,6 +23,8 @@ import org.apache.flink.core.fs.Path;
 
 import java.io.IOException;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Base class for state that is stored in a file.
  */
@@ -42,7 +44,7 @@ public abstract class AbstractFileState implements java.io.Serializable {
 	 * @param filePath The path to the file that stores the state.
 	 */
 	protected AbstractFileState(Path filePath) {
-		this.filePath = filePath;
+		this.filePath = requireNonNull(filePath);
 	}
 
 	/**
@@ -62,7 +64,7 @@ public abstract class AbstractFileState implements java.io.Serializable {
 	public void discardState() throws Exception {
 		getFileSystem().delete(filePath, false);
 
-		// send a call to delete the directory containing the file. this will
+		// send a call to delete the checkpoint directory containing the file. This will
 		// fail (and be ignored) when some files still exist
 		try {
 			getFileSystem().delete(filePath.getParent(), false);

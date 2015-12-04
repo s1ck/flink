@@ -15,15 +15,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.flink.storm.api;
 
-import org.apache.flink.storm.api.FlinkTopologyBuilder;
+package org.apache.flink.api.java.typeutils.runtime;
 
-import backtype.storm.generated.StormTopology;
+import org.apache.flink.api.common.typeutils.SerializerTestBase;
+import org.apache.flink.api.common.typeutils.TypeSerializer;
 
-public class TestTopologyBuilder extends FlinkTopologyBuilder {
+import java.util.UUID;
+
+public class WritableSerializerUUIDTest extends SerializerTestBase<WritableID> {
 	@Override
-	public StormTopology getStormTopology() {
-		return super.getStormTopology();
+	protected TypeSerializer<WritableID> createSerializer() {
+		return new WritableSerializer<>(WritableID.class);
+	}
+
+	@Override
+	protected int getLength() {
+		return -1;
+	}
+
+	@Override
+	protected Class<WritableID> getTypeClass() {
+		return WritableID.class;
+	}
+
+	@Override
+	protected WritableID[] getTestData() {
+		return new WritableID[] {
+			new WritableID(new UUID(0, 0)),
+			new WritableID(new UUID(1, 0)),
+			new WritableID(new UUID(1, 1))
+		};
 	}
 }
